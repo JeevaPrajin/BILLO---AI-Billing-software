@@ -28,6 +28,8 @@ export default function Settings() {
 
   const handleExportJSON = async () => {
     const exportData = {
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
       settings: await settingsDB.getItem('shopSettings'),
       products: [] as any[],
       customers: [] as any[],
@@ -84,26 +86,83 @@ export default function Settings() {
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (!data.settings && !data.products && !data.sales) {
-          throw new Error("Invalid backup file");
-        }
         
-        if (window.confirm("This will replace your current data with the backup. Continue?")) {
+        // 1. Validate Structure
+        if (!data || typeof data !== 'object') throw new Error("Invalid backup: Not a JSON object");
+        
+        const isArray = (arr: any) => Array.isArray(arr);
+        if (data.settings && typeof data.settings !== 'object') throw new Error("Invalid backup: settings must be an object");
+        if (data.products && !isArray(data.products)) throw new Error("Invalid backup: products must be an array");
+        if (data.customers && !isArray(data.customers)) throw new Error("Invalid backup: customers must be an array");
+        if (data.sales && !isArray(data.sales)) throw new Error("Invalid backup: sales must be an array");
+
+        const prods = data.products || [];
+        const custs = data.customers || [];
+        const sals = data.sales || [];
+
+        // Validate items
+        for (const p of prods) {
+          if (typeof p.id !== 'string') throw new Error("Invalid product: missing string id");
+          if (typeof p.price !== 'number') throw new Error("Invalid product: price must be a number");
+          if (typeof p.stock !== 'number') throw new Error("Invalid product: stock must be a number");
+        }
+        for (const c of custs) {
+          if (typeof c.id !== 'string') throw new Error("Invalid customer: missing string id");
+        }
+        for (const s of sals) {
+          if (typeof s.id !== 'string') throw new Error("Invalid sale: missing string id");
+          if (typeof s.total !== 'number') throw new Error("Invalid sale: total must be a number");
+        }
+
+        // 2. Confirm Dialog
+        const confirmMsg = `Are you sure you want to restore? This will replace current data with ${prods.length} products, ${custs.length} customers, ${sals.length} sales.`;
+        if (!window.confirm(confirmMsg)) {
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+        }
+
+        // 3. Snapshot current data
+        const snapshot = {
+          settings: await settingsDB.getItem('shopSettings'),
+          products: [] as any[],
+          customers: [] as any[],
+          sales: [] as any[],
+        };
+        await productsDB.iterate((value) => { snapshot.products.push(value); });
+        await customersDB.iterate((value) => { snapshot.customers.push(value); });
+        await salesDB.iterate((value) => { snapshot.sales.push(value); });
+
+        // 4. Clear and Write
+        try {
           await settingsDB.clear();
           await productsDB.clear();
           await customersDB.clear();
           await salesDB.clear();
           
           if (data.settings) await settingsDB.setItem('shopSettings', data.settings);
-          for (const p of data.products || []) await productsDB.setItem(p.id, p);
-          for (const c of data.customers || []) await customersDB.setItem(c.id, c);
-          for (const s of data.sales || []) await salesDB.setItem(s.id, s);
+          for (const p of prods) await productsDB.setItem(p.id, p);
+          for (const c of custs) await customersDB.setItem(c.id, c);
+          for (const s of sals) await salesDB.setItem(s.id, s);
           
           alert("Backup restored successfully. The app will now reload.");
           window.location.reload();
+        } catch (writeErr) {
+          // Restore Snapshot
+          await settingsDB.clear();
+          await productsDB.clear();
+          await customersDB.clear();
+          await salesDB.clear();
+          
+          if (snapshot.settings) await settingsDB.setItem('shopSettings', snapshot.settings);
+          for (const p of snapshot.products) await productsDB.setItem(p.id, p);
+          for (const c of snapshot.customers) await customersDB.setItem(c.id, c);
+          for (const s of snapshot.sales) await salesDB.setItem(s.id, s);
+
+          throw new Error("Write failed during restore. Original data was recovered. Details: " + writeErr);
         }
-      } catch (err) {
-        alert("Failed to restore backup. Please ensure the file is valid.");
+
+      } catch (err: any) {
+        alert("Failed to restore backup: " + err.message);
         console.error(err);
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
