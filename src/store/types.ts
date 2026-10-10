@@ -4,6 +4,7 @@ export interface ShopSettings {
   phone?: string;
   address?: string;
   staffMembers?: string[];
+  benchmarkMode?: boolean;
 }
 
 export interface Product {
@@ -40,4 +41,7 @@ export interface SalesHistoryItem {
   staffName?: string;
   billNumber?: string;
   billingDurationMs?: number;
+  itemCount?: number;
+  msFirstTapToPayScreen?: number;
+  msFirstTapToSaved?: number;
 }

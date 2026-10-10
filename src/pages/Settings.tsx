@@ -5,7 +5,7 @@ import { settingsDB, productsDB, customersDB, salesDB } from '../store/db';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { settings, updateSettings } = useAppContext();
+  const { settings, updateSettings, sales } = useAppContext();
   const [shopName, setShopName] = useState(settings.shopName);
   const [upiId, setUpiId] = useState(settings.upiId);
   const [phone, setPhone] = useState(settings.phone || '');
@@ -322,6 +322,88 @@ export default function Settings() {
               onChange={handleImportJSON} 
             />
           </div>
+        </div>
+
+        <div className="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant shadow-sm mt-4">
+          <div className="flex items-center justify-between mb-2 text-primary">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined">timer</span>
+              <h3 className="font-label-lg font-bold">Benchmark Mode</h3>
+            </div>
+            <button
+              onClick={() => updateSettings({ benchmarkMode: !settings.benchmarkMode })}
+              className={`w-12 h-6 rounded-full flex items-center transition-colors px-1 ${settings.benchmarkMode ? 'bg-primary' : 'bg-surface-container-highest'}`}
+            >
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${settings.benchmarkMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
+            </button>
+          </div>
+          <p className="text-body-sm text-on-surface-variant mb-4">
+            Record detailed timing metrics for each sale (time to pay screen, time to save) for UX research.
+          </p>
+          
+          {settings.benchmarkMode && (
+            <div className="space-y-4">
+              <div className="bg-surface-container p-3 rounded-lg flex gap-2 flex-col text-body-sm">
+                <div className="flex justify-between">
+                  <span>Small Basket (1-2)</span>
+                  <span className="font-bold text-primary">
+                    {(() => {
+                      const s = sales.filter(x => x.itemCount && x.itemCount <= 2 && x.msFirstTapToSaved);
+                      if (!s.length) return 'N/A';
+                      const avg = s.reduce((sum, x) => sum + x.msFirstTapToSaved!, 0) / s.length;
+                      return `${Math.round(avg/1000)}s`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Medium Basket (3-5)</span>
+                  <span className="font-bold text-primary">
+                    {(() => {
+                      const s = sales.filter(x => x.itemCount && x.itemCount >= 3 && x.itemCount <= 5 && x.msFirstTapToSaved);
+                      if (!s.length) return 'N/A';
+                      const avg = s.reduce((sum, x) => sum + x.msFirstTapToSaved!, 0) / s.length;
+                      return `${Math.round(avg/1000)}s`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Large Basket (6+)</span>
+                  <span className="font-bold text-primary">
+                    {(() => {
+                      const s = sales.filter(x => x.itemCount && x.itemCount >= 6 && x.msFirstTapToSaved);
+                      if (!s.length) return 'N/A';
+                      const avg = s.reduce((sum, x) => sum + x.msFirstTapToSaved!, 0) / s.length;
+                      return `${Math.round(avg/1000)}s`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                onClick={async () => {
+                  const bSales = sales.filter(s => s.msFirstTapToSaved !== undefined);
+                  const headers = ["Bill Number", "Items", "Ms to Pay Screen", "Ms to Saved"];
+                  const rows = bSales.map(s => [
+                    s.billNumber || '', 
+                    s.itemCount || 0, 
+                    s.msFirstTapToPayScreen || '', 
+                    s.msFirstTapToSaved || ''
+                  ].join(','));
+                  const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `billo_benchmark_${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="w-full bg-surface-container-high text-primary py-3 rounded-xl font-label-lg font-bold flex items-center justify-center gap-2 border border-outline-variant active:scale-95 transition-transform"
+              >
+                <span className="material-symbols-outlined text-base">download</span>
+                Export Benchmark Log (CSV)
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-error-container rounded-xl p-space-md border border-error shadow-sm mt-4 mb-8">

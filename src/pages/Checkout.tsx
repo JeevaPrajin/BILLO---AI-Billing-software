@@ -10,7 +10,7 @@ export default function Checkout() {
     settings, cart, clearCart, addSale, updateProduct, 
     customers, addCustomer, updateCustomer, 
     activeStaff, updateActiveStaff, sales,
-    billingStartTime
+    billingStartTime, billingPayScreenTime, setBillingPayScreenTime
   } = useAppContext();
 
   // Wizard state
@@ -58,6 +58,9 @@ export default function Checkout() {
 
   const handleNextToPayment = () => {
     if (selectedStaff) updateActiveStaff(selectedStaff);
+    if (settings.benchmarkMode) {
+      setBillingPayScreenTime(Date.now());
+    }
     setStep('payment');
   };
 
@@ -96,7 +99,20 @@ export default function Checkout() {
 
     setReceiptCustomerDue(newOutstandingBalance);
 
-    const durationMs = billingStartTime ? Date.now() - billingStartTime : undefined;
+    const savedTime = Date.now();
+    const durationMs = billingStartTime ? savedTime - billingStartTime : undefined;
+    
+    let itemCount: number | undefined = undefined;
+    let msFirstTapToPayScreen: number | undefined = undefined;
+    let msFirstTapToSaved: number | undefined = undefined;
+
+    if (settings.benchmarkMode && billingStartTime) {
+      itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      msFirstTapToSaved = savedTime - billingStartTime;
+      if (billingPayScreenTime) {
+        msFirstTapToPayScreen = billingPayScreenTime - billingStartTime;
+      }
+    }
 
     const sale: SalesHistoryItem = {
       id: Date.now().toString(),
@@ -109,7 +125,10 @@ export default function Checkout() {
       customerPhone: finalCustomerPhone,
       staffName: selectedStaff,
       billNumber,
-      billingDurationMs: durationMs
+      billingDurationMs: durationMs,
+      itemCount,
+      msFirstTapToPayScreen,
+      msFirstTapToSaved
     };
 
     // 1. Decrement stock

@@ -32,6 +32,8 @@ interface AppState {
 
   billingStartTime: number | null;
   setBillingStartTime: (time: number | null) => void;
+  billingPayScreenTime: number | null;
+  setBillingPayScreenTime: (time: number | null) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -45,6 +47,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeStaff, setActiveStaff] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [billingStartTime, setBillingStartTime] = useState<number | null>(null);
+  const [billingPayScreenTime, setBillingPayScreenTime] = useState<number | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -140,6 +143,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => {
     setCart([]);
     setBillingStartTime(null);
+    setBillingPayScreenTime(null);
   };
 
   const updateActiveStaff = (name: string) => {
@@ -155,7 +159,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       updateSettings, addProduct, updateProduct, deleteProduct, seedProducts,
       addCustomer, updateCustomer, addSale,
       addToCart, removeFromCart, clearCart, updateActiveStaff,
-      billingStartTime, setBillingStartTime
+      billingStartTime, setBillingStartTime,
+      billingPayScreenTime, setBillingPayScreenTime
     }}>
       {children}
     </AppContext.Provider>
