@@ -1,17 +1,66 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { differenceInDays, subDays } from 'date-fns';
+import { differenceInDays, subDays, isToday, isThisWeek, isThisMonth, isSameDay, format } from 'date-fns';
 import { forecastDaysLeft } from '../lib/forecast';
+
+type TimeRange = 'today' | 'week' | 'month';
 
 export default function Insights() {
   const { sales, products } = useAppContext();
+  const [timeRange, setTimeRange] = useState<TimeRange>('today');
 
-  const todayTotal = useMemo(() => {
+  const filteredSales = useMemo(() => {
+    return sales.filter(s => {
+      const d = new Date(s.timestamp);
+      if (timeRange === 'today') return isToday(d);
+      if (timeRange === 'week') return isThisWeek(d, { weekStartsOn: 1 });
+      if (timeRange === 'month') return isThisMonth(d);
+      return true;
+    });
+  }, [sales, timeRange]);
+
+  const { totalSales, billCount, avgBill } = useMemo(() => {
+    const total = filteredSales.reduce((sum, s) => sum + s.total, 0);
+    const count = filteredSales.length;
+    return {
+      totalSales: total,
+      billCount: count,
+      avgBill: count > 0 ? Math.round(total / count) : 0
+    };
+  }, [filteredSales]);
+
+  const chartData = useMemo(() => {
     const today = new Date();
-    return sales
-      .filter(s => new Date(s.timestamp).toDateString() === today.toDateString())
-      .reduce((sum, s) => sum + s.total, 0);
+    // 7 days ending today, from oldest to newest (i.e. 6 days ago to today)
+    return Array.from({ length: 7 }).map((_, i) => {
+      const date = subDays(today, 6 - i);
+      const dayTotal = sales
+        .filter(s => isSameDay(new Date(s.timestamp), date))
+        .reduce((sum, s) => sum + s.total, 0);
+      return {
+        label: format(date, 'EEE'), // e.g. Mon, Tue
+        total: dayTotal
+      };
+    });
   }, [sales]);
+
+  const maxChartValue = Math.max(...chartData.map(d => d.total), 1);
+
+  const topProducts = useMemo(() => {
+    const revenueMap: Record<string, { name: string; revenue: number; quantity: number }> = {};
+    filteredSales.forEach(sale => {
+      sale.items.forEach(item => {
+        if (!revenueMap[item.product.id]) {
+          revenueMap[item.product.id] = { name: item.product.name, revenue: 0, quantity: 0 };
+        }
+        revenueMap[item.product.id].revenue += (item.quantity * item.product.price);
+        revenueMap[item.product.id].quantity += item.quantity;
+      });
+    });
+    return Object.values(revenueMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [filteredSales]);
 
   const avgBillingTime = useMemo(() => {
     const timedSales = sales.filter(s => s.billingDurationMs !== undefined && s.billingDurationMs > 0);
@@ -46,16 +95,39 @@ export default function Insights() {
 
   return (
     <div className="px-screen-margin-mobile pt-space-md pb-32">
-      <h2 className="text-headline-sm text-primary mb-space-md">Today's Overview</h2>
+      <div className="flex justify-between items-center mb-space-md">
+        <h2 className="text-headline-sm text-primary">Sales Overview</h2>
+      </div>
       
-      <div className="grid grid-cols-2 gap-3 mb-space-lg">
+      {/* Time Range Toggle */}
+      <div className="flex bg-surface-container-low p-1 rounded-xl mb-space-md">
+        {(['today', 'week', 'month'] as TimeRange[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setTimeRange(t)}
+            className={`flex-1 py-2 text-label-md rounded-lg capitalize transition-colors ${
+              timeRange === t ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant'
+            }`}
+          >
+            {t === 'today' ? 'Today' : t === 'week' ? 'This Week' : 'This Month'}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center">
           <p className="text-label-sm text-on-surface-variant">Sales Total</p>
-          <p className="text-headline-lg font-extrabold text-primary">₹{todayTotal}</p>
+          <p className="text-headline-lg font-extrabold text-primary">₹{totalSales}</p>
         </div>
-        <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center">
-          <p className="text-label-sm text-on-surface-variant">Bills Cleared</p>
-          <p className="text-headline-lg font-extrabold text-primary">{sales.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString()).length}</p>
+        <div className="flex flex-col gap-3">
+          <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center flex-1">
+            <p className="text-label-sm text-on-surface-variant">Bills Cleared</p>
+            <p className="text-headline-sm font-extrabold text-primary">{billCount}</p>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center flex-1">
+            <p className="text-label-sm text-on-surface-variant">Avg. Bill</p>
+            <p className="text-headline-sm font-extrabold text-primary">₹{avgBill}</p>
+          </div>
         </div>
       </div>
 
@@ -70,6 +142,42 @@ export default function Insights() {
           </p>
         </div>
       )}
+
+      {/* 7-Day Chart */}
+      <h2 className="text-headline-sm text-primary mb-space-sm">Last 7 Days</h2>
+      <div className="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant shadow-sm mb-space-lg flex items-end justify-between h-48 gap-2">
+        {chartData.map((d, i) => (
+          <div key={i} className="flex flex-col items-center flex-1 gap-2 h-full justify-end">
+            <div className="w-full bg-surface-container rounded-t-sm flex items-end justify-center h-32 relative">
+               <div
+                 className="w-full bg-primary rounded-t-sm transition-all duration-500 max-h-full"
+                 style={{ height: `${(d.total / maxChartValue) * 100}%` }}
+               ></div>
+            </div>
+            <span className="text-[10px] text-on-surface-variant uppercase">{d.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Top Products */}
+      <h2 className="text-headline-sm text-primary mb-space-sm">Top 5 Products</h2>
+      <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm mb-space-lg">
+        {topProducts.length > 0 ? (
+          <div className="flex flex-col divide-y divide-outline-variant">
+            {topProducts.map((p, idx) => (
+              <div key={idx} className="py-2 flex justify-between items-center">
+                <span className="text-label-md text-primary truncate pr-2">{idx + 1}. {p.name}</span>
+                <div className="text-right flex flex-col">
+                  <span className="text-label-md font-bold text-primary">₹{p.revenue}</span>
+                  <span className="text-[10px] text-on-surface-variant uppercase">{p.quantity} sold</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-body-sm text-on-surface-variant text-center py-4">No sales in this period.</p>
+        )}
+      </div>
 
       <h2 className="text-headline-sm text-primary mb-space-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-secondary">auto_awesome</span>
