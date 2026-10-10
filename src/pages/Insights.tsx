@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAppContext } from '../store/AppContext';
 import { differenceInDays, subDays } from 'date-fns';
+import { forecastDaysLeft } from '../lib/forecast';
 
 export default function Insights() {
   const { sales, products } = useAppContext();
@@ -24,50 +25,16 @@ export default function Insights() {
   }, [sales]);
 
   const restockPredictions = useMemo(() => {
-    const predictions: { name: string; daysLeft: number | 'N/A'; stock: number; icon: string }[] = [];
-    const today = new Date();
-
-    products.forEach(p => {
-      // Find daily sales for this product
-      const dailySales = Array(14).fill(0); // index 0 is today, 1 is yesterday, etc.
-      let firstSaleDay = -1;
-
-      sales.forEach(sale => {
-        const daysAgo = differenceInDays(today, new Date(sale.timestamp));
-        if (daysAgo < 14) {
-          const item = sale.items.find(i => i.product.id === p.id);
-          if (item) {
-            dailySales[daysAgo] += item.quantity;
-            if (firstSaleDay === -1 || daysAgo > firstSaleDay) {
-              firstSaleDay = daysAgo;
-            }
-          }
-        }
-      });
-
-      let velocity = 0;
-
-      if (firstSaleDay === -1) {
-        // No sales data
-        predictions.push({ name: p.name, daysLeft: 'N/A', stock: p.stock, icon: p.image || '📦' });
-        return;
-      }
-
-      if (firstSaleDay < 14) {
-        // Flat average fallback if less than 14 days of data
-        const totalSold = dailySales.reduce((a, b) => a + b, 0);
-        velocity = totalSold / (firstSaleDay + 1);
-      } else {
-        // Weighted average: recent 7 days (70% weight), prior 7 days (30% weight)
-        const recentSum = dailySales.slice(0, 7).reduce((a, b) => a + b, 0);
-        const priorSum = dailySales.slice(7, 14).reduce((a, b) => a + b, 0);
-        const recentAvg = recentSum / 7;
-        const priorAvg = priorSum / 7;
-        velocity = (recentAvg * 0.7) + (priorAvg * 0.3);
-      }
-
-      const daysLeft = velocity > 0 ? Math.round(p.stock / velocity) : 'N/A';
-      predictions.push({ name: p.name, daysLeft, stock: p.stock, icon: p.image || '📦' });
+    const now = new Date();
+    const predictions = products.map(p => {
+      const forecast = forecastDaysLeft(sales, p, now);
+      return {
+        name: p.name,
+        stock: p.stock,
+        icon: p.image || '📦',
+        daysLeft: forecast.daysLeft,
+        method: forecast.method
+      };
     });
 
     return predictions.sort((a, b) => {
@@ -122,15 +89,20 @@ export default function Insights() {
                 <p className="text-label-sm text-on-surface-variant">Current stock: {pred.stock}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-1">
               {pred.daysLeft === 'N/A' ? (
                 <span className="text-label-sm text-on-surface-variant">No Data</span>
               ) : (
                 <span className={`font-bold px-2 py-1 rounded-md text-label-sm ${
-                  (pred.daysLeft as number) <= 2 ? 'bg-error-container text-error' : 'bg-secondary-fixed text-on-secondary-fixed-variant'
+                  (pred.daysLeft as number) <= 2 ? 'bg-error-container text-error' : 
+                  (pred.daysLeft as number) <= 5 ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                  'bg-secondary-fixed text-on-secondary-fixed-variant'
                 }`}>
                   Runs out in ~{pred.daysLeft}d
                 </span>
+              )}
+              {pred.method === 'flat' && pred.daysLeft !== 'N/A' && (
+                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Early estimate</span>
               )}
             </div>
           </div>
