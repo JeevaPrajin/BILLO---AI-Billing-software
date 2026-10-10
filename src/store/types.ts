@@ -39,4 +39,5 @@ export interface SalesHistoryItem {
   customerPhone?: string;
   staffName?: string;
   billNumber?: string;
+  billingDurationMs?: number;
 }

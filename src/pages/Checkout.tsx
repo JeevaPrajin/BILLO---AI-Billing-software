@@ -9,7 +9,8 @@ export default function Checkout() {
   const { 
     settings, cart, clearCart, addSale, updateProduct, 
     customers, addCustomer, updateCustomer, 
-    activeStaff, updateActiveStaff, sales 
+    activeStaff, updateActiveStaff, sales,
+    billingStartTime
   } = useAppContext();
 
   // Wizard state
@@ -87,6 +88,8 @@ export default function Checkout() {
       }
     }
 
+    const durationMs = billingStartTime ? Date.now() - billingStartTime : undefined;
+
     const sale: SalesHistoryItem = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -97,7 +100,8 @@ export default function Checkout() {
       customerName: finalCustomerName,
       customerPhone: finalCustomerPhone,
       staffName: selectedStaff,
-      billNumber
+      billNumber,
+      billingDurationMs: durationMs
     };
 
     // 1. Decrement stock

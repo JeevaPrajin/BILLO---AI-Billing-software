@@ -12,6 +12,17 @@ export default function Insights() {
       .reduce((sum, s) => sum + s.total, 0);
   }, [sales]);
 
+  const avgBillingTime = useMemo(() => {
+    const timedSales = sales.filter(s => s.billingDurationMs !== undefined && s.billingDurationMs > 0);
+    if (timedSales.length === 0) return null;
+    const sum = timedSales.reduce((acc, s) => acc + s.billingDurationMs!, 0);
+    const avgMs = sum / timedSales.length;
+    return {
+      timeStr: `${Math.round(avgMs / 1000)}s`,
+      count: timedSales.length
+    };
+  }, [sales]);
+
   const restockPredictions = useMemo(() => {
     const predictions: { name: string; daysLeft: number | 'N/A'; stock: number; icon: string }[] = [];
     const today = new Date();
@@ -80,6 +91,18 @@ export default function Insights() {
           <p className="text-headline-lg font-extrabold text-primary">{sales.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString()).length}</p>
         </div>
       </div>
+
+      {avgBillingTime && (
+        <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm mb-space-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-primary">
+            <span className="material-symbols-outlined">timer</span>
+            <span className="font-label-lg">Avg. Billing Time</span>
+          </div>
+          <p className="text-body-sm text-on-surface-variant font-medium">
+            {avgBillingTime.timeStr} <span className="opacity-75">(over {avgBillingTime.count} sales)</span>
+          </p>
+        </div>
+      )}
 
       <h2 className="text-headline-sm text-primary mb-space-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-secondary">auto_awesome</span>

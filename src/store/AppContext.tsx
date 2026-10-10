@@ -29,6 +29,9 @@ interface AppState {
   // Session
   activeStaff: string;
   updateActiveStaff: (name: string) => void;
+
+  billingStartTime: number | null;
+  setBillingStartTime: (time: number | null) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -41,6 +44,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeStaff, setActiveStaff] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [billingStartTime, setBillingStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -114,6 +118,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (p: Product) => {
     setCart(prev => {
+      if (prev.length === 0) setBillingStartTime(Date.now());
       const existing = prev.find(i => i.product.id === p.id);
       if (existing) {
         return prev.map(i => i.product.id === p.id ? { ...i, quantity: i.quantity + 1 } : i);
@@ -132,7 +137,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    setBillingStartTime(null);
+  };
 
   const updateActiveStaff = (name: string) => {
     setActiveStaff(name);
@@ -146,7 +154,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       settings, products, customers, sales, cart, activeStaff,
       updateSettings, addProduct, updateProduct, deleteProduct, seedProducts,
       addCustomer, updateCustomer, addSale,
-      addToCart, removeFromCart, clearCart, updateActiveStaff
+      addToCart, removeFromCart, clearCart, updateActiveStaff,
+      billingStartTime, setBillingStartTime
     }}>
       {children}
     </AppContext.Provider>

@@ -24,6 +24,94 @@ export default function Settings() {
     }
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleExportJSON = async () => {
+    const exportData = {
+      settings: await settingsDB.getItem('shopSettings'),
+      products: [] as any[],
+      customers: [] as any[],
+      sales: [] as any[],
+    };
+    await productsDB.iterate((value) => { exportData.products.push(value); });
+    await customersDB.iterate((value) => { exportData.customers.push(value); });
+    await salesDB.iterate((value) => { exportData.sales.push(value); });
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `billo_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = async () => {
+    const salesData: any[] = [];
+    await salesDB.iterate((value) => { salesData.push(value); });
+    
+    const headers = ["Date", "Bill Number", "Customer Name", "Customer Phone", "Payment Method", "Total", "Items", "Staff Name"];
+    const rows = salesData.map(sale => {
+      const date = new Date(sale.timestamp).toLocaleString().replace(/,/g, '');
+      const items = sale.items.map((i: any) => `${i.quantity}x ${i.product.name}`).join('; ');
+      return [
+        date,
+        sale.billNumber || '',
+        sale.customerName || '',
+        sale.customerPhone || '',
+        sale.paymentMethod,
+        sale.total,
+        `"${items}"`,
+        sale.staffName || ''
+      ].join(',');
+    });
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `billo_sales_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (!data.settings && !data.products && !data.sales) {
+          throw new Error("Invalid backup file");
+        }
+        
+        if (window.confirm("This will replace your current data with the backup. Continue?")) {
+          await settingsDB.clear();
+          await productsDB.clear();
+          await customersDB.clear();
+          await salesDB.clear();
+          
+          if (data.settings) await settingsDB.setItem('shopSettings', data.settings);
+          for (const p of data.products || []) await productsDB.setItem(p.id, p);
+          for (const c of data.customers || []) await customersDB.setItem(c.id, c);
+          for (const s of data.sales || []) await salesDB.setItem(s.id, s);
+          
+          alert("Backup restored successfully. The app will now reload.");
+          window.location.reload();
+        }
+      } catch (err) {
+        alert("Failed to restore backup. Please ensure the file is valid.");
+        console.error(err);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+
   const handleSave = async () => {
     await updateSettings({ shopName, upiId, phone, address, staffMembers });
     alert('Settings saved!');
@@ -127,12 +215,57 @@ export default function Settings() {
 
         <button 
           onClick={handleSave}
-          className="w-full bg-primary text-on-primary py-3 rounded-xl font-label-lg font-bold active:scale-95 transition-transform mt-4 mb-8"
+          className="w-full bg-primary text-on-primary py-3 rounded-xl font-label-lg font-bold active:scale-95 transition-transform mt-4 mb-4"
         >
           Save Changes
         </button>
 
-        <div className="bg-error-container rounded-xl p-space-md border border-error shadow-sm mt-8">
+        <div className="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant shadow-sm mt-4">
+          <div className="flex items-center gap-2 mb-2 text-primary">
+            <span className="material-symbols-outlined">save</span>
+            <h3 className="font-label-lg font-bold">Backup & Export</h3>
+          </div>
+          <p className="text-body-sm text-on-surface-variant mb-4">
+            Billo runs 100% offline. All your data lives only on this device. Create backups to prevent data loss if you clear your browser cache or change devices.
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={handleExportJSON}
+              className="w-full bg-surface-container-high text-primary py-3 rounded-xl font-label-lg font-bold flex items-center justify-center gap-2 border border-outline-variant active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-outlined text-base">download</span>
+              Export Full Backup (JSON)
+            </button>
+            
+            <button 
+              onClick={handleExportCSV}
+              className="w-full bg-surface-container-high text-primary py-3 rounded-xl font-label-lg font-bold flex items-center justify-center gap-2 border border-outline-variant active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-outlined text-base">table</span>
+              Export Sales History (CSV)
+            </button>
+
+            <div className="w-full h-px bg-outline-variant my-1"></div>
+
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full bg-surface-container-high text-primary py-3 rounded-xl font-label-lg font-bold flex items-center justify-center gap-2 border border-outline-variant active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-outlined text-base">upload</span>
+              Restore Backup (JSON)
+            </button>
+            <input 
+              type="file" 
+              accept=".json" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handleImportJSON} 
+            />
+          </div>
+        </div>
+
+        <div className="bg-error-container rounded-xl p-space-md border border-error shadow-sm mt-4 mb-8">
           <div className="flex items-center gap-2 mb-2 text-error">
             <span className="material-symbols-outlined">warning</span>
             <h3 className="font-label-lg font-bold">Danger Zone</h3>
