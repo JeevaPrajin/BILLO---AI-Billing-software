@@ -26,6 +26,7 @@ export default function Checkout() {
   
   // Receipt state
   const [completedSale, setCompletedSale] = useState<SalesHistoryItem | null>(null);
+  const [receiptCustomerDue, setReceiptCustomerDue] = useState<number>(0);
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
@@ -60,7 +61,7 @@ export default function Checkout() {
     setStep('payment');
   };
 
-  const handleMarkAsPaid = async (method: 'UPI' | 'Cash') => {
+  const handleMarkAsPaid = async (method: 'UPI' | 'Cash' | 'Credit') => {
     // Generate Bill Number
     const nextBillNum = 1000 + sales.length + 1;
     const billNumber = `INV-${nextBillNum}`;
@@ -68,25 +69,32 @@ export default function Checkout() {
     let finalCustomerId = undefined;
     const finalCustomerName = customerName.trim() || 'Walk-in Customer';
     const finalCustomerPhone = customerPhone.trim();
+    let newOutstandingBalance = 0;
 
     // Link or create customer
     if (finalCustomerPhone) {
       const existing = customers.find(c => c.phone === finalCustomerPhone);
       if (existing) {
         finalCustomerId = existing.id;
-        await updateCustomer({ ...existing, lastTransactionDate: new Date().toISOString() });
+        const updatedBalance = method === 'Credit' ? existing.outstandingBalance + cartTotal : existing.outstandingBalance;
+        newOutstandingBalance = updatedBalance;
+        await updateCustomer({ ...existing, outstandingBalance: updatedBalance, lastTransactionDate: new Date().toISOString() });
       } else if (customerName.trim()) {
+        const updatedBalance = method === 'Credit' ? cartTotal : 0;
+        newOutstandingBalance = updatedBalance;
         const newCust = {
           id: Date.now().toString(),
           name: finalCustomerName,
           phone: finalCustomerPhone,
-          outstandingBalance: 0,
+          outstandingBalance: updatedBalance,
           lastTransactionDate: new Date().toISOString()
         };
         await addCustomer(newCust);
         finalCustomerId = newCust.id;
       }
     }
+
+    setReceiptCustomerDue(newOutstandingBalance);
 
     const durationMs = billingStartTime ? Date.now() - billingStartTime : undefined;
 
@@ -231,21 +239,34 @@ export default function Checkout() {
               <p className="text-label-sm text-on-surface-variant">Scan to pay • {settings.shopName}</p>
             </div>
 
-            <div className="w-full flex gap-space-sm mt-auto">
+            <div className="w-full flex flex-col gap-2 mt-auto">
+              {(!customerPhone.trim() || !customerName.trim()) && (
+                <p className="text-error text-center text-label-sm">Name and Phone required for Credit.</p>
+              )}
+              <div className="w-full flex gap-space-sm">
+                <button 
+                  onClick={() => handleMarkAsPaid('Cash')}
+                  className="flex-1 h-14 bg-surface-container-highest text-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 border border-outline-variant shadow-sm"
+                >
+                  <span className="material-symbols-outlined">payments</span>
+                  Cash
+                </button>
+                
+                <button 
+                  onClick={() => handleMarkAsPaid('UPI')}
+                  className="flex-1 h-14 bg-primary text-on-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 shadow-md"
+                >
+                  <span className="material-symbols-outlined">check_circle</span>
+                  UPI
+                </button>
+              </div>
               <button 
-                onClick={() => handleMarkAsPaid('Cash')}
-                className="flex-1 h-14 bg-surface-container-highest text-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 border border-outline-variant shadow-sm"
+                disabled={!customerPhone.trim() || !customerName.trim()}
+                onClick={() => handleMarkAsPaid('Credit')}
+                className={`w-full h-14 font-label-lg rounded-xl flex items-center justify-center gap-2 border shadow-sm ${(!customerPhone.trim() || !customerName.trim()) ? 'bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed' : 'bg-tertiary-container text-on-tertiary-container active:scale-95'}`}
               >
-                <span className="material-symbols-outlined">payments</span>
-                Cash Paid
-              </button>
-              
-              <button 
-                onClick={() => handleMarkAsPaid('UPI')}
-                className="flex-1 h-14 bg-primary text-on-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 shadow-md"
-              >
-                <span className="material-symbols-outlined">check_circle</span>
-                UPI Paid
+                <span className="material-symbols-outlined">menu_book</span>
+                Credit (Udhaar)
               </button>
             </div>
           </div>
@@ -308,6 +329,13 @@ export default function Checkout() {
                 <span>Pay Mode:</span>
                 <span>{completedSale.paymentMethod}</span>
               </div>
+
+              {completedSale.paymentMethod === 'Credit' && (
+                <div className="mt-2 pt-2 border-t border-dashed border-gray-400 font-bold text-center">
+                  <p>Added to credit: ₹{completedSale.total.toFixed(2)}</p>
+                  <p>Total due: ₹{receiptCustomerDue.toFixed(2)}</p>
+                </div>
+              )}
 
               <div className="text-center border-t border-dashed border-gray-400 mt-6 pt-4 text-xs">
                 <p>Thank you for your visit!</p>
