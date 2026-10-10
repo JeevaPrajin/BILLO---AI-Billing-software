@@ -90,6 +90,11 @@ export default function Settings() {
         // 1. Validate Structure
         if (!data || typeof data !== 'object') throw new Error("Invalid backup: Not a JSON object");
         
+        // Ensure either schemaVersion is 1 or at least one recognized top-level key exists
+        if (data.schemaVersion !== 1 && !('settings' in data) && !('products' in data) && !('customers' in data) && !('sales' in data)) {
+          throw new Error("Invalid backup: Unrecognized file format");
+        }
+        
         const isArray = (arr: any) => Array.isArray(arr);
         if (data.settings && typeof data.settings !== 'object') throw new Error("Invalid backup: settings must be an object");
         if (data.products && !isArray(data.products)) throw new Error("Invalid backup: products must be an array");
@@ -99,6 +104,12 @@ export default function Settings() {
         const prods = data.products || [];
         const custs = data.customers || [];
         const sals = data.sales || [];
+        
+        // Reject if absolutely no data exists
+        const hasSettings = data.settings && Object.keys(data.settings).length > 0;
+        if (!hasSettings && prods.length === 0 && custs.length === 0 && sals.length === 0) {
+          throw new Error("This file has no Billo data");
+        }
 
         // Validate items
         for (const p of prods) {
