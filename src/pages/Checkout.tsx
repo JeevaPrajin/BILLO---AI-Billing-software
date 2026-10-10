@@ -29,6 +29,7 @@ export default function Checkout() {
   const [receiptCustomerDue, setReceiptCustomerDue] = useState<number>(0);
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const pendingBillNumber = `INV-${1000 + sales.length + 1}`;
 
   // Auto-fill customer name if phone matches
   useEffect(() => {
@@ -49,12 +50,12 @@ export default function Checkout() {
     }
 
     if (step === 'payment' && settings.upiId) {
-      const upiLink = `upi://pay?pa=${settings.upiId}&pn=${encodeURIComponent(settings.shopName)}&am=${cartTotal}&cu=INR`;
+      const upiLink = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent(settings.shopName)}&am=${cartTotal.toFixed(2)}&tn=Bill%20${pendingBillNumber}&cu=INR`;
       QRCode.toDataURL(upiLink, { width: 300, margin: 2, color: { dark: '#091426', light: '#ffffff' }})
         .then(url => setQrCodeUrl(url))
         .catch(err => console.error('Failed to generate QR code', err));
     }
-  }, [step, cartTotal, settings.upiId, settings.shopName, navigate]);
+  }, [step, cartTotal, settings.upiId, settings.shopName, navigate, pendingBillNumber]);
 
   const handleNextToPayment = () => {
     if (selectedStaff) updateActiveStaff(selectedStaff);
@@ -66,8 +67,7 @@ export default function Checkout() {
 
   const handleMarkAsPaid = async (method: 'UPI' | 'Cash' | 'Credit') => {
     // Generate Bill Number
-    const nextBillNum = 1000 + sales.length + 1;
-    const billNumber = `INV-${nextBillNum}`;
+    const billNumber = pendingBillNumber;
 
     let finalCustomerId = undefined;
     const finalCustomerName = customerName.trim() || 'Walk-in Customer';
@@ -241,12 +241,15 @@ export default function Checkout() {
               <span className="text-display-currency text-primary font-extrabold mb-space-md tracking-tight">₹{cartTotal}</span>
               
               {settings.upiId ? (
-                <div className="bg-white p-2 rounded-xl border-2 border-primary shadow-sm mb-space-sm">
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="UPI QR Code" className="w-48 h-48" />
-                  ) : (
-                    <div className="w-48 h-48 bg-surface-container-low animate-pulse rounded-lg"></div>
-                  )}
+                <div className="flex flex-col items-center mb-space-sm">
+                  <div className="bg-white p-2 rounded-xl border-2 border-primary shadow-sm mb-2">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="UPI QR Code" className="w-48 h-48" />
+                    ) : (
+                      <div className="w-48 h-48 bg-surface-container-low animate-pulse rounded-lg"></div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-on-surface-variant font-mono tracking-wider">{settings.upiId}</span>
                 </div>
               ) : (
                 <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant text-center mb-space-sm">
@@ -272,11 +275,24 @@ export default function Checkout() {
                 </button>
                 
                 <button 
+                  disabled={!settings.upiId}
                   onClick={() => handleMarkAsPaid('UPI')}
-                  className="flex-1 h-14 bg-primary text-on-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 shadow-md"
+                  className={`flex-1 h-14 font-label-lg rounded-xl flex flex-col items-center justify-center shadow-md border ${!settings.upiId ? 'bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed border-outline-variant' : 'bg-primary text-on-primary active:scale-95 border-primary flex-row gap-2'}`}
                 >
-                  <span className="material-symbols-outlined">check_circle</span>
-                  UPI
+                  {settings.upiId ? (
+                    <>
+                      <span className="material-symbols-outlined">check_circle</span>
+                      UPI
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">block</span>
+                        <span>UPI</span>
+                      </div>
+                      <span className="text-[9px] font-normal tracking-tight">Add ID in Settings</span>
+                    </>
+                  )}
                 </button>
               </div>
               <button 
