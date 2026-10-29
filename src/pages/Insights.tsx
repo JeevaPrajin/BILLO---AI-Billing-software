@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 import { differenceInDays, subDays, isToday, isThisWeek, isThisMonth, isSameDay, format } from 'date-fns';
 import { forecastDaysLeft } from '../lib/forecast';
 
@@ -7,6 +8,7 @@ type TimeRange = 'today' | 'week' | 'month';
 
 export default function Insights() {
   const { sales, products } = useAppContext();
+  const { t } = useT();
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
 
   const filteredSales = useMemo(() => {
@@ -96,36 +98,36 @@ export default function Insights() {
   return (
     <div className="px-screen-margin-mobile pt-space-md pb-32">
       <div className="flex justify-between items-center mb-space-md">
-        <h2 className="text-headline-sm text-primary">Sales Overview</h2>
+        <h2 className="text-headline-sm text-primary">{t('insights.title')}</h2>
       </div>
       
       {/* Time Range Toggle */}
       <div className="flex bg-surface-container-low p-1 rounded-xl mb-space-md">
-        {(['today', 'week', 'month'] as TimeRange[]).map(t => (
+        {(['today', 'week', 'month'] as TimeRange[]).map(timeKey => (
           <button
-            key={t}
-            onClick={() => setTimeRange(t)}
+            key={timeKey}
+            onClick={() => setTimeRange(timeKey)}
             className={`flex-1 py-2 text-label-md rounded-lg capitalize transition-colors ${
-              timeRange === t ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant'
+              timeRange === timeKey ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant'
             }`}
           >
-            {t === 'today' ? 'Today' : t === 'week' ? 'This Week' : 'This Month'}
+            {timeKey === 'today' ? t('insights.today') : timeKey === 'week' ? t('insights.this_week') : t('insights.this_month')}
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center">
-          <p className="text-label-sm text-on-surface-variant">Sales Total</p>
+          <p className="text-label-sm text-on-surface-variant">{t('insights.sales_total')}</p>
           <p className="text-headline-lg font-extrabold text-primary">₹{totalSales}</p>
         </div>
         <div className="flex flex-col gap-3">
           <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center flex-1">
-            <p className="text-label-sm text-on-surface-variant">Bills Cleared</p>
+            <p className="text-label-sm text-on-surface-variant">{t('insights.bills_cleared')}</p>
             <p className="text-headline-sm font-extrabold text-primary">{billCount}</p>
           </div>
           <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm flex flex-col justify-center flex-1">
-            <p className="text-label-sm text-on-surface-variant">Avg. Bill</p>
+            <p className="text-label-sm text-on-surface-variant">{t('insights.avg_bill')}</p>
             <p className="text-headline-sm font-extrabold text-primary">₹{avgBill}</p>
           </div>
         </div>
@@ -135,16 +137,16 @@ export default function Insights() {
         <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm mb-space-lg flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             <span className="material-symbols-outlined">timer</span>
-            <span className="font-label-lg">Avg. Billing Time</span>
+            <span className="font-label-lg">{t('insights.avg_billing_time')}</span>
           </div>
           <p className="text-body-sm text-on-surface-variant font-medium">
-            {avgBillingTime.timeStr} <span className="opacity-75">(over {avgBillingTime.count} sales)</span>
+            {avgBillingTime.timeStr} <span className="opacity-75">{t('insights.over_sales', { count: avgBillingTime.count })}</span>
           </p>
         </div>
       )}
 
       {/* 7-Day Chart */}
-      <h2 className="text-headline-sm text-primary mb-space-sm">Last 7 Days</h2>
+      <h2 className="text-headline-sm text-primary mb-space-sm">{t('insights.last_7_days')}</h2>
       <div className="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant shadow-sm mb-space-lg flex items-end justify-between h-48 gap-2">
         {chartData.map((d, i) => (
           <div key={i} className="flex flex-col items-center flex-1 gap-2 h-full justify-end">
@@ -160,30 +162,30 @@ export default function Insights() {
       </div>
 
       {/* Top Products */}
-      <h2 className="text-headline-sm text-primary mb-space-sm">Top 5 Products</h2>
+      <h2 className="text-headline-sm text-primary mb-space-sm">{t('insights.top_5_products')}</h2>
       <div className="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant shadow-sm mb-space-lg">
         {topProducts.length > 0 ? (
           <div className="flex flex-col divide-y divide-outline-variant">
             {topProducts.map((p, idx) => (
               <div key={idx} className="py-2 flex justify-between items-center">
-                <span className="text-label-md text-primary truncate pr-2">{idx + 1}. {p.name}</span>
+                <span className="text-label-md text-primary truncate pr-2">{idx + 1}. {t(p.name)}</span>
                 <div className="text-right flex flex-col">
                   <span className="text-label-md font-bold text-primary">₹{p.revenue}</span>
-                  <span className="text-[10px] text-on-surface-variant uppercase">{p.quantity} sold</span>
+                  <span className="text-[10px] text-on-surface-variant uppercase">{t('insights.sold', { count: p.quantity })}</span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-body-sm text-on-surface-variant text-center py-4">No sales in this period.</p>
+          <p className="text-body-sm text-on-surface-variant text-center py-4">{t('insights.no_sales')}</p>
         )}
       </div>
 
       <h2 className="text-headline-sm text-primary mb-space-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-secondary">auto_awesome</span>
-        AI Restock Alerts
+        {t('insights.restock_alerts')}
       </h2>
-      <p className="text-body-sm text-on-surface-variant mb-space-md">Based on recent 14-day sales velocity trend.</p>
+      <p className="text-body-sm text-on-surface-variant mb-space-md">{t('insights.restock_subtitle')}</p>
 
       <div className="space-y-3">
         {restockPredictions.map((pred, idx) => (
@@ -193,24 +195,24 @@ export default function Insights() {
                 {pred.icon}
               </div>
               <div>
-                <h3 className="font-label-lg text-primary">{pred.name}</h3>
-                <p className="text-label-sm text-on-surface-variant">Current stock: {pred.stock}</p>
+                <h3 className="font-label-lg text-primary">{t(pred.name)}</h3>
+                <p className="text-label-sm text-on-surface-variant">{t('insights.current_stock', { stock: pred.stock })}</p>
               </div>
             </div>
             <div className="text-right flex flex-col items-end gap-1">
               {pred.daysLeft === 'N/A' ? (
-                <span className="text-label-sm text-on-surface-variant">No Data</span>
+                <span className="text-label-sm text-on-surface-variant">{t('insights.no_data')}</span>
               ) : (
                 <span className={`font-bold px-2 py-1 rounded-md text-label-sm ${
                   (pred.daysLeft as number) <= 2 ? 'bg-error-container text-error' : 
                   (pred.daysLeft as number) <= 5 ? 'bg-amber-100 text-amber-800 border border-amber-200' :
                   'bg-secondary-fixed text-on-secondary-fixed-variant'
                 }`}>
-                  Runs out in ~{pred.daysLeft}d
+                  {t('insights.runs_out', { days: pred.daysLeft })}
                 </span>
               )}
               {pred.method === 'flat' && pred.daysLeft !== 'N/A' && (
-                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Early estimate</span>
+                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">{t('insights.early_estimate')}</span>
               )}
             </div>
           </div>

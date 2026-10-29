@@ -77,17 +77,17 @@ export default {
         "screen-margin-mobile": "1rem"
       },
       fontFamily: {
-        "body-sm": ["Inter", "sans-serif"],
-        "headline-lg": ["Inter", "sans-serif"],
-        "label-sm": ["Inter", "sans-serif"],
-        "label-md": ["Inter", "sans-serif"],
-        "body-md": ["Inter", "sans-serif"],
-        "headline-sm": ["Inter", "sans-serif"],
-        "label-lg": ["Inter", "sans-serif"],
-        "display-currency-sm": ["Inter", "sans-serif"],
-        "headline-md": ["Inter", "sans-serif"],
-        "body-lg": ["Inter", "sans-serif"],
-        "display-currency": ["Inter", "sans-serif"]
+        "body-sm": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "headline-lg": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "label-sm": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "label-md": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "body-md": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "headline-sm": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "label-lg": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "display-currency-sm": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "headline-md": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "body-lg": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"],
+        "display-currency": ["Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "sans-serif"]
       },
       fontSize: {
         "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }],

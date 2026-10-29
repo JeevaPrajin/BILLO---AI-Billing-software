@@ -1,19 +1,25 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 import { cn } from '../lib/utils';
 
 export default function MainLayout() {
   const { settings } = useAppContext();
   const navigate = useNavigate();
+  const { t } = useT();
 
   return (
     <div className="bg-background text-on-background font-body-md antialiased min-h-screen pb-44 selection:bg-secondary-fixed">
       {/* TopAppBar Component */}
       <header className="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm flex justify-between items-center w-full px-screen-margin-mobile py-space-xs h-16">
         <div className="flex items-center gap-space-sm">
-          <div className="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary active:scale-95 transition-transform duration-150">
-            <span className="material-symbols-outlined text-primary">storefront</span>
+          <div className="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary active:scale-95 transition-transform duration-150 overflow-hidden">
+            {settings.logo ? (
+              <img src={settings.logo} alt={settings.shopName} className="w-full h-full object-contain rounded-xl" />
+            ) : (
+              <span className="material-symbols-outlined text-primary">storefront</span>
+            )}
           </div>
           <div>
             <div className="flex items-center gap-space-2xs">
@@ -22,17 +28,17 @@ export default function MainLayout() {
               </h1>
               <span className="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
             </div>
-            <p className="text-label-sm font-label-sm text-on-surface-variant">Counter #1 • Online</p>
+            <p className="text-label-sm font-label-sm text-on-surface-variant">{t('layout.counter_online')}</p>
           </div>
         </div>
         {/* Right utility icons & sync */}
         <div className="flex items-center gap-space-xs">
           <button className="flex items-center gap-1 bg-surface-container-low px-space-sm py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-low active:scale-95 transition-transform duration-150">
             <span className="material-symbols-outlined text-primary text-sm">sync</span>
-            <span className="text-label-sm font-label-sm text-primary">Synced</span>
+            <span className="text-label-sm font-label-sm text-primary">{t('layout.synced')}</span>
           </button>
           <button
-            aria-label="Settings"
+            aria-label={t('nav.settings')}
             onClick={() => navigate('/settings')}
             className="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low active:scale-95 transition-transform duration-150"
           >
@@ -53,7 +59,7 @@ export default function MainLayout() {
           isActive ? "text-secondary font-bold" : "text-on-surface-variant hover:bg-surface-container-low"
         )}>
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>point_of_sale</span>
-          <span className="text-label-sm font-label-sm mt-0.5">Billing</span>
+          <span className="text-label-sm font-label-sm mt-0.5">{t('nav.billing')}</span>
         </NavLink>
 
         <NavLink to="/products" className={({ isActive }) => cn(
@@ -61,7 +67,7 @@ export default function MainLayout() {
           isActive ? "text-secondary font-bold" : "text-on-surface-variant hover:bg-surface-container-low"
         )}>
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>inventory_2</span>
-          <span className="text-label-sm font-label-sm mt-0.5">Products</span>
+          <span className="text-label-sm font-label-sm mt-0.5">{t('nav.products')}</span>
         </NavLink>
 
         <NavLink to="/credit" className={({ isActive }) => cn(
@@ -69,7 +75,7 @@ export default function MainLayout() {
           isActive ? "text-secondary font-bold" : "text-on-surface-variant hover:bg-surface-container-low"
         )}>
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
-          <span className="text-label-sm font-label-sm mt-0.5">Credit Ledger</span>
+          <span className="text-label-sm font-label-sm mt-0.5">{t('nav.credit_ledger')}</span>
         </NavLink>
 
         <NavLink to="/insights" className={({ isActive }) => cn(
@@ -77,7 +83,7 @@ export default function MainLayout() {
           isActive ? "text-secondary font-bold" : "text-on-surface-variant hover:bg-surface-container-low"
         )}>
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
-          <span className="text-label-sm font-label-sm mt-0.5">Insights</span>
+          <span className="text-label-sm font-label-sm mt-0.5">{t('nav.insights')}</span>
         </NavLink>
       </nav>
     </div>

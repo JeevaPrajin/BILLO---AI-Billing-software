@@ -74,6 +74,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (settings.accentColor) {
+      document.documentElement.style.setProperty('--billo-accent', settings.accentColor);
+      const hex = settings.accentColor.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 0;
+      const b = parseInt(hex.substring(4, 6), 16) || 0;
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      const textColor = yiq >= 160 ? '#1e293b' : '#ffffff';
+      document.documentElement.style.setProperty('--billo-accent-text', textColor);
+    } else {
+      document.documentElement.style.removeProperty('--billo-accent');
+      document.documentElement.style.removeProperty('--billo-accent-text');
+    }
+  }, [settings.accentColor]);
+
   const updateSettings = async (s: Partial<ShopSettings>) => {
     const newSettings = { ...settings, ...s };
     await settingsDB.setItem('shopSettings', newSettings);

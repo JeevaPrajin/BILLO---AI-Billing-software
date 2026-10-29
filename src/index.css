@@ -4,8 +4,16 @@
 
 @layer base {
   body {
+    font-family: 'Inter', 'Noto Sans Tamil', 'Noto Sans Devanagari', sans-serif;
     @apply bg-surface text-on-surface min-h-screen selection:bg-secondary-container selection:text-on-secondary-fixed;
   }
+}
+
+:root[style*="--billo-accent"] button.bg-primary,
+:root[style*="--billo-accent"] button.bg-secondary-container,
+:root[style*="--billo-accent"] .btn-primary {
+  background-color: var(--billo-accent) !important;
+  color: var(--billo-accent-text, #ffffff) !important;
 }
 
 .material-symbols-outlined {

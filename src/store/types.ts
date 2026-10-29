@@ -1,3 +1,5 @@
+export type Language = 'en' | 'ta' | 'hi';
+
 export interface ShopSettings {
   shopName: string;
   upiId: string;
@@ -5,6 +7,9 @@ export interface ShopSettings {
   address?: string;
   staffMembers?: string[];
   benchmarkMode?: boolean;
+  language?: Language;
+  logo?: string;
+  accentColor?: string;
 }
 
 export interface Product {

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 import { Customer } from '../store/types';
 
 export default function Credit() {
   const { customers, addCustomer, updateCustomer, sales } = useAppContext();
+  const { t } = useT();
   const [isAdding, setIsAdding] = useState(false);
   const [newCust, setNewCust] = useState({ name: '', phone: '', due: 0 });
 
@@ -25,7 +27,7 @@ export default function Credit() {
   };
 
   const handlePayment = async (c: Customer) => {
-    const amountStr = prompt(`Enter payment amount received from ${c.name}:`);
+    const amountStr = prompt(t('credit.payment_prompt', { name: c.name }));
     const amount = Number(amountStr);
     if (amount > 0) {
       await updateCustomer({
@@ -39,43 +41,43 @@ export default function Credit() {
   return (
     <div className="px-screen-margin-mobile pt-space-md pb-32">
       <div className="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant shadow-sm mb-space-lg text-center">
-        <p className="text-label-md text-on-surface-variant">Total Outstanding Credit</p>
+        <p className="text-label-md text-on-surface-variant">{t('credit.total_outstanding')}</p>
         <p className="text-display-currency-sm text-error font-extrabold mt-1">₹{totalCredit}</p>
       </div>
 
       <div className="flex justify-between items-center mb-space-md">
-        <h2 className="text-headline-sm text-primary">Credit Ledger</h2>
+        <h2 className="text-headline-sm text-primary">{t('credit.title')}</h2>
         <button 
           onClick={() => setIsAdding(true)}
           className="bg-primary-container text-on-primary px-3 py-1.5 rounded-lg text-label-sm font-bold flex items-center gap-1 active:scale-95"
         >
           <span className="material-symbols-outlined text-sm">person_add</span>
-          New
+          {t('credit.new_customer')}
         </button>
       </div>
 
       {isAdding && (
         <div className="bg-surface-container-lowest p-space-sm rounded-xl border border-secondary-container mb-space-md shadow-sm">
           <input 
-            type="text" placeholder="Customer Name" 
+            type="text" placeholder={t('credit.name_placeholder')} 
             value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})}
             className="w-full mb-2 p-2 border border-outline-variant rounded bg-surface-container-low" 
           />
           <div className="flex gap-2 mb-3">
             <input 
-              type="tel" placeholder="Phone" 
+              type="tel" placeholder={t('credit.phone_placeholder')} 
               value={newCust.phone} onChange={e => setNewCust({...newCust, phone: e.target.value})}
               className="w-1/2 p-2 border border-outline-variant rounded bg-surface-container-low" 
             />
             <input 
-              type="number" placeholder="Due Amount" 
+              type="number" placeholder={t('credit.due_placeholder')} 
               value={newCust.due || ''} onChange={e => setNewCust({...newCust, due: Number(e.target.value)})}
               className="w-1/2 p-2 border border-outline-variant rounded bg-surface-container-low" 
             />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleSaveCustomer} className="flex-1 bg-secondary-container text-on-secondary-fixed py-2 rounded font-bold">Add</button>
-            <button onClick={() => setIsAdding(false)} className="flex-1 bg-surface-container-high text-primary py-2 rounded font-bold border border-outline-variant">Cancel</button>
+            <button onClick={handleSaveCustomer} className="flex-1 bg-secondary-container text-on-secondary-fixed py-2 rounded font-bold">{t('common.add')}</button>
+            <button onClick={() => setIsAdding(false)} className="flex-1 bg-surface-container-high text-primary py-2 rounded font-bold border border-outline-variant">{t('common.cancel')}</button>
           </div>
         </div>
       )}
@@ -106,19 +108,19 @@ export default function Credit() {
                   </div>
                   <div>
                     <h3 className="font-headline-sm text-primary">{c.name}</h3>
-                    <p className="text-label-sm text-on-surface-variant">Last active: {new Date(c.lastTransactionDate).toLocaleDateString()}</p>
+                    <p className="text-label-sm text-on-surface-variant">{t('credit.last_active', { date: new Date(c.lastTransactionDate).toLocaleDateString() })}</p>
                   </div>
                 </div>
                 <div className="text-right flex items-center gap-2">
                   <div>
                     {isSettled ? (
                       <>
-                        <p className="text-label-sm text-on-surface-variant">Total Spent</p>
+                        <p className="text-label-sm text-on-surface-variant">{t('credit.total_spent')}</p>
                         <p className="font-headline-sm text-on-surface">₹{lifetimeSpend}</p>
                       </>
                     ) : (
                       <>
-                        <p className="text-label-sm text-on-surface-variant">Due</p>
+                        <p className="text-label-sm text-on-surface-variant">{t('credit.due')}</p>
                         <p className="font-headline-sm text-error">₹{c.outstandingBalance}</p>
                       </>
                     )}
@@ -134,7 +136,7 @@ export default function Credit() {
                   onClick={(e) => { e.stopPropagation(); handlePayment(c); }}
                   className="w-full bg-surface-container-low text-primary border border-outline-variant rounded-lg py-2 font-label-md active:scale-95 transition-transform"
                 >
-                  Record Payment
+                  {t('credit.record_payment')}
                 </button>
               )}
 
@@ -144,21 +146,21 @@ export default function Credit() {
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="text-label-sm text-on-surface-variant">
-                    <span className="mr-2">Phone:</span>
-                    <span className="text-on-surface font-body-md">{c.phone || 'N/A'}</span>
+                    <span className="mr-2">{t('credit.phone_label')}</span>
+                    <span className="text-on-surface font-body-md">{c.phone || t('common.na')}</span>
                   </div>
                   
-                  <h4 className="font-label-md text-primary mt-2">Order History</h4>
+                  <h4 className="font-label-md text-primary mt-2">{t('credit.order_history')}</h4>
                   
                   {customerSales.length === 0 ? (
-                    <p className="text-body-sm text-on-surface-variant italic">No order history available</p>
+                    <p className="text-body-sm text-on-surface-variant italic">{t('credit.no_history')}</p>
                   ) : (
                     <div className="space-y-3">
                       {customerSales.map(sale => (
                         <div key={sale.id} className="bg-surface-container-low p-3 rounded-lg border border-outline-variant text-sm">
                            <div className="flex justify-between items-start mb-2 border-b border-outline-variant pb-2">
                               <div>
-                                <p className="font-bold text-on-surface">{sale.billNumber || 'Unknown Bill'}</p>
+                                <p className="font-bold text-on-surface">{sale.billNumber || t('credit.unknown_bill')}</p>
                                 <p className="text-xs text-on-surface-variant">{new Date(sale.timestamp).toLocaleString()}</p>
                               </div>
                               <div className="text-right">
@@ -170,7 +172,7 @@ export default function Credit() {
                            <div className="mb-2">
                               {sale.items.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-xs text-on-surface-variant py-0.5">
-                                  <span>{item.quantity}x {item.product.name}</span>
+                                  <span>{item.quantity}x {t(item.product.name)}</span>
                                   <span>₹{(item.quantity * item.product.price).toFixed(2)}</span>
                                 </div>
                               ))}
@@ -178,7 +180,7 @@ export default function Credit() {
 
                            {sale.staffName && (
                              <p className="text-xs text-on-surface-variant border-t border-outline-variant pt-2 mt-1">
-                               Processed by: <span className="font-medium text-on-surface">{sale.staffName}</span>
+                               {t('credit.processed_by')} <span className="font-medium text-on-surface">{sale.staffName}</span>
                              </p>
                            )}
                         </div>

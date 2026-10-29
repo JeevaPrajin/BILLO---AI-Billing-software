@@ -11,5 +11,8 @@ export const defaultSettings: ShopSettings = {
   upiId: '',
   phone: '',
   address: '',
-  staffMembers: []
+  staffMembers: [],
+  language: 'en',
+  logo: undefined,
+  accentColor: undefined
 };

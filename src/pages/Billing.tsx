@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 import ProductCard from '../components/ProductCard';
 
 export default function Billing() {
   const navigate = useNavigate();
   const { products, cart } = useAppContext();
+  const { t } = useT();
   const [activeCategory, setActiveCategory] = useState<string>('All Items');
 
   const categories = ['All Items', ...Array.from(new Set(products.map(p => p.category)))];
@@ -32,7 +34,7 @@ export default function Billing() {
                   : 'bg-surface-container-lowest text-primary border border-outline-variant hover:bg-surface-container-low'
               }`}
             >
-              <span>{cat}</span>
+              <span>{cat === 'All Items' ? t('billing.all_items') : t(cat)}</span>
               {cat === 'All Items' && activeCategory === 'All Items' && (
                 <span className="bg-surface-container-highest/20 px-1.5 py-0.5 rounded-full text-label-sm font-label-sm">
                   {products.length}
@@ -58,7 +60,7 @@ export default function Billing() {
           <div className="flex items-center justify-between mb-space-xs pb-space-2xs border-b border-outline-variant/40">
             <div className="flex items-center gap-space-xs">
               <span className="text-label-md font-label-md text-primary font-bold">
-                {cartItemCount} items in order
+                {t('billing.items_in_order', { count: cartItemCount })}
               </span>
             </div>
             {/* Quick Tender Buttons - Just visual for now or can add to total */}
@@ -66,7 +68,7 @@ export default function Billing() {
 
           <div className="flex items-center gap-space-sm">
             <div className="flex flex-col min-w-[100px]">
-              <span className="text-label-sm font-label-sm text-on-surface-variant leading-none">Grand Total</span>
+              <span className="text-label-sm font-label-sm text-on-surface-variant leading-none">{t('billing.grand_total')}</span>
               <span className="font-display-currency text-display-currency text-primary leading-tight tracking-tight">₹{cartTotal}</span>
             </div>
             
@@ -78,10 +80,10 @@ export default function Billing() {
                 <div className="w-8 h-8 rounded-lg bg-on-secondary-fixed/15 flex items-center justify-center">
                   <span className="material-symbols-outlined text-xl">point_of_sale</span>
                 </div>
-                <span className="font-label-lg text-label-lg font-extrabold tracking-wide">Charge ₹{cartTotal}</span>
+                <span className="font-label-lg text-label-lg font-extrabold tracking-wide">{t('billing.charge')} ₹{cartTotal}</span>
               </div>
               <div className="flex items-center gap-0.5 font-bold">
-                <span className="text-label-md font-label-md">Cash/UPI</span>
+                <span className="text-label-md font-label-md">{t('billing.cash_upi')}</span>
                 <span className="material-symbols-outlined text-base">arrow_forward</span>
               </div>
             </button>

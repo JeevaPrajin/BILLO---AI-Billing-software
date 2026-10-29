@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 import { SalesHistoryItem } from '../store/types';
 
 export default function Checkout() {
@@ -12,6 +13,7 @@ export default function Checkout() {
     activeStaff, updateActiveStaff, sales,
     billingStartTime, billingPayScreenTime, setBillingPayScreenTime
   } = useAppContext();
+  const { t } = useT();
 
   // Wizard state
   const [step, setStep] = useState<'details' | 'payment' | 'receipt'>('details');
@@ -70,7 +72,7 @@ export default function Checkout() {
     const billNumber = pendingBillNumber;
 
     let finalCustomerId = undefined;
-    const finalCustomerName = customerName.trim() || 'Walk-in Customer';
+    const finalCustomerName = customerName.trim() || t('checkout.walk_in_customer');
     const finalCustomerPhone = customerPhone.trim();
     let newOutstandingBalance = 0;
 
@@ -151,10 +153,10 @@ export default function Checkout() {
 
   const smsReceipt = () => {
     if (!completedSale?.customerPhone) {
-      alert("No phone number provided for this customer.");
+      alert(t('checkout.alert_no_phone'));
       return;
     }
-    const msg = `Thank you for shopping at ${settings.shopName}! Your bill ${completedSale.billNumber} total is Rs.${completedSale.total}.`;
+    const msg = t('checkout.sms_message', { shopName: settings.shopName, billNumber: completedSale.billNumber || '', total: completedSale.total });
     window.open(`sms:${completedSale.customerPhone}?body=${encodeURIComponent(msg)}`);
   };
 
@@ -171,9 +173,9 @@ export default function Checkout() {
           <div className="w-10 h-10"></div>
         )}
         <h1 className="text-headline-md font-headline-md text-primary">
-          {step === 'details' && 'Order Details'}
-          {step === 'payment' && 'Payment'}
-          {step === 'receipt' && 'Receipt'}
+          {step === 'details' && t('checkout.order_details')}
+          {step === 'payment' && t('checkout.payment')}
+          {step === 'receipt' && t('checkout.receipt')}
         </h1>
       </header>
 
@@ -183,29 +185,29 @@ export default function Checkout() {
         {step === 'details' && (
           <div className="w-full flex flex-col gap-space-md mt-4 max-w-md">
             <div className="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant shadow-sm">
-              <h2 className="text-label-lg text-primary mb-3">Customer Information</h2>
+              <h2 className="text-label-lg text-primary mb-3">{t('checkout.customer_info')}</h2>
               
-              <label className="block text-label-sm text-on-surface-variant mb-1">Phone Number</label>
+              <label className="block text-label-sm text-on-surface-variant mb-1">{t('checkout.phone_number')}</label>
               <input 
                 type="tel" 
                 value={customerPhone}
                 onChange={e => setCustomerPhone(e.target.value)}
-                placeholder="e.g. 9876543210"
+                placeholder={t('checkout.phone_placeholder')}
                 className="w-full p-3 mb-4 border border-outline-variant rounded-lg bg-surface-container-low text-primary focus:border-secondary-container outline-none"
               />
 
-              <label className="block text-label-sm text-on-surface-variant mb-1">Customer Name</label>
+              <label className="block text-label-sm text-on-surface-variant mb-1">{t('checkout.customer_name')}</label>
               <input 
                 type="text" 
                 value={customerName}
                 onChange={e => setCustomerName(e.target.value)}
-                placeholder="Leave blank for Walk-in"
+                placeholder={t('checkout.customer_name_placeholder')}
                 className="w-full p-3 border border-outline-variant rounded-lg bg-surface-container-low text-primary focus:border-secondary-container outline-none"
               />
             </div>
 
             <div className="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant shadow-sm">
-              <h2 className="text-label-lg text-primary mb-3">Staff Member</h2>
+              <h2 className="text-label-lg text-primary mb-3">{t('checkout.staff_member')}</h2>
               
               {settings.staffMembers && settings.staffMembers.length > 0 ? (
                 <select 
@@ -213,13 +215,13 @@ export default function Checkout() {
                   onChange={e => setSelectedStaff(e.target.value)}
                   className="w-full p-3 border border-outline-variant rounded-lg bg-surface-container-low text-primary outline-none"
                 >
-                  <option value="">Select Staff</option>
+                  <option value="">{t('checkout.select_staff')}</option>
                   {settings.staffMembers.map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               ) : (
-                <p className="text-body-sm text-error">No staff added in Settings. You can proceed without staff, or add them later.</p>
+                <p className="text-body-sm text-error">{t('checkout.no_staff_notice')}</p>
               )}
             </div>
 
@@ -227,7 +229,7 @@ export default function Checkout() {
               onClick={handleNextToPayment}
               className="mt-4 w-full h-14 bg-secondary-container text-on-secondary-fixed font-label-lg rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
-              Next: Payment
+              {t('checkout.next_payment')}
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
           </div>
@@ -237,14 +239,14 @@ export default function Checkout() {
         {step === 'payment' && (
           <div className="w-full flex flex-col h-full items-center max-w-md mt-4">
             <div className="w-full bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-outline-variant flex flex-col items-center mb-space-lg">
-              <h2 className="text-label-lg text-on-surface-variant mb-1">Total Amount</h2>
+              <h2 className="text-label-lg text-on-surface-variant mb-1">{t('checkout.total_amount')}</h2>
               <span className="text-display-currency text-primary font-extrabold mb-space-md tracking-tight">₹{cartTotal}</span>
               
               {settings.upiId ? (
                 <div className="flex flex-col items-center mb-space-sm">
                   <div className="bg-white p-2 rounded-xl border-2 border-primary shadow-sm mb-2">
                     {qrCodeUrl ? (
-                      <img src={qrCodeUrl} alt="UPI QR Code" className="w-48 h-48" />
+                      <img src={qrCodeUrl} alt={t('checkout.qr_code_alt')} className="w-48 h-48" />
                     ) : (
                       <div className="w-48 h-48 bg-surface-container-low animate-pulse rounded-lg"></div>
                     )}
@@ -254,16 +256,16 @@ export default function Checkout() {
               ) : (
                 <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant text-center mb-space-sm">
                   <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">qr_code_scanner</span>
-                  <p className="text-body-sm text-on-surface-variant">No UPI ID configured. Setup in Settings to show QR.</p>
+                  <p className="text-body-sm text-on-surface-variant">{t('checkout.no_upi_notice')}</p>
                 </div>
               )}
               
-              <p className="text-label-sm text-on-surface-variant">Scan to pay • {settings.shopName}</p>
+              <p className="text-label-sm text-on-surface-variant">{t('checkout.scan_to_pay', { shopName: settings.shopName })}</p>
             </div>
 
             <div className="w-full flex flex-col gap-2 mt-auto">
               {(!customerPhone.trim() || !customerName.trim()) && (
-                <p className="text-error text-center text-label-sm">Name and Phone required for Credit.</p>
+                <p className="text-error text-center text-label-sm">{t('checkout.credit_requirement')}</p>
               )}
               <div className="w-full flex gap-space-sm">
                 <button 
@@ -271,7 +273,7 @@ export default function Checkout() {
                   className="flex-1 h-14 bg-surface-container-highest text-primary font-label-lg rounded-xl flex items-center justify-center gap-2 active:scale-95 border border-outline-variant shadow-sm"
                 >
                   <span className="material-symbols-outlined">payments</span>
-                  Cash
+                  {t('checkout.pay_cash')}
                 </button>
                 
                 <button 
@@ -282,15 +284,15 @@ export default function Checkout() {
                   {settings.upiId ? (
                     <>
                       <span className="material-symbols-outlined">check_circle</span>
-                      UPI
+                      {t('checkout.pay_upi')}
                     </>
                   ) : (
                     <>
                       <div className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">block</span>
-                        <span>UPI</span>
+                        <span>{t('checkout.pay_upi')}</span>
                       </div>
-                      <span className="text-[9px] font-normal tracking-tight">Add ID in Settings</span>
+                      <span className="text-[9px] font-normal tracking-tight">{t('checkout.add_id_settings')}</span>
                     </>
                   )}
                 </button>
@@ -301,7 +303,7 @@ export default function Checkout() {
                 className={`w-full h-14 font-label-lg rounded-xl flex items-center justify-center gap-2 border shadow-sm ${(!customerPhone.trim() || !customerName.trim()) ? 'bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed' : 'bg-tertiary-container text-on-tertiary-container active:scale-95'}`}
               >
                 <span className="material-symbols-outlined">menu_book</span>
-                Credit (Udhaar)
+                {t('checkout.pay_credit')}
               </button>
             </div>
           </div>
@@ -314,27 +316,30 @@ export default function Checkout() {
             {/* PRINTABLE AREA */}
             <div id="printable-receipt" className="w-full bg-white text-black p-6 rounded-xl shadow-md border border-gray-200 text-sm font-mono mb-6">
               <div className="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
+                {settings.logo && (
+                  <img src={settings.logo} alt={settings.shopName} className="w-16 h-16 object-contain mx-auto mb-2" />
+                )}
                 <h2 className="text-xl font-bold uppercase">{settings.shopName}</h2>
                 {settings.address && <p className="whitespace-pre-line mt-1">{settings.address}</p>}
                 {settings.phone && <p>Ph: {settings.phone}</p>}
               </div>
 
               <div className="flex justify-between mb-1">
-                <span>Bill No:</span>
+                <span>{t('checkout.receipt_bill_no')}</span>
                 <span className="font-bold">{completedSale.billNumber}</span>
               </div>
               <div className="flex justify-between mb-1">
-                <span>Date:</span>
+                <span>{t('checkout.receipt_date')}</span>
                 <span>{new Date(completedSale.timestamp).toLocaleString()}</span>
               </div>
               {completedSale.staffName && (
                 <div className="flex justify-between mb-1">
-                  <span>Cashier:</span>
+                  <span>{t('checkout.receipt_cashier')}</span>
                   <span>{completedSale.staffName}</span>
                 </div>
               )}
               <div className="flex justify-between mb-4 border-b border-dashed border-gray-400 pb-4">
-                <span>Customer:</span>
+                <span>{t('checkout.receipt_customer')}</span>
                 <span className="text-right">
                   {completedSale.customerName}<br/>
                   {completedSale.customerPhone}
@@ -342,38 +347,38 @@ export default function Checkout() {
               </div>
 
               <div className="w-full mb-2 flex font-bold border-b border-dashed border-gray-400 pb-2">
-                <span className="flex-1">Item</span>
-                <span className="w-12 text-center">Qty</span>
-                <span className="w-20 text-right">Total</span>
+                <span className="flex-1">{t('checkout.receipt_item')}</span>
+                <span className="w-12 text-center">{t('checkout.receipt_qty')}</span>
+                <span className="w-20 text-right">{t('checkout.receipt_total')}</span>
               </div>
               
               {completedSale.items.map((item, idx) => (
                 <div key={idx} className="w-full flex mb-2">
-                  <span className="flex-1 pr-2 truncate">{item.product.name}</span>
+                  <span className="flex-1 pr-2 truncate">{t(item.product.name)}</span>
                   <span className="w-12 text-center">{item.quantity}</span>
                   <span className="w-20 text-right">{(item.product.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
 
               <div className="border-t border-dashed border-gray-400 mt-4 pt-4 flex justify-between items-center text-base font-bold">
-                <span>GRAND TOTAL</span>
+                <span>{t('checkout.receipt_grand_total')}</span>
                 <span>Rs. {completedSale.total.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between mt-2">
-                <span>Pay Mode:</span>
+                <span>{t('checkout.receipt_pay_mode')}</span>
                 <span>{completedSale.paymentMethod}</span>
               </div>
 
               {completedSale.paymentMethod === 'Credit' && (
                 <div className="mt-2 pt-2 border-t border-dashed border-gray-400 font-bold text-center">
-                  <p>Added to credit: ₹{completedSale.total.toFixed(2)}</p>
-                  <p>Total due: ₹{receiptCustomerDue.toFixed(2)}</p>
+                  <p>{t('checkout.receipt_added_credit', { amount: completedSale.total.toFixed(2) })}</p>
+                  <p>{t('checkout.receipt_total_due', { amount: receiptCustomerDue.toFixed(2) })}</p>
                 </div>
               )}
 
               <div className="text-center border-t border-dashed border-gray-400 mt-6 pt-4 text-xs">
-                <p>Thank you for your visit!</p>
+                <p>{t('checkout.receipt_thank_you')}</p>
               </div>
             </div>
             
@@ -385,14 +390,14 @@ export default function Checkout() {
                   className="flex-1 h-12 bg-surface-container-high text-primary font-bold rounded-xl flex items-center justify-center gap-2 border border-outline-variant"
                 >
                   <span className="material-symbols-outlined">print</span>
-                  Print
+                  {t('checkout.print')}
                 </button>
                 <button 
                   onClick={smsReceipt}
                   className="flex-1 h-12 bg-surface-container-high text-primary font-bold rounded-xl flex items-center justify-center gap-2 border border-outline-variant"
                 >
                   <span className="material-symbols-outlined">sms</span>
-                  Send SMS
+                  {t('checkout.send_sms')}
                 </button>
               </div>
               
@@ -400,7 +405,7 @@ export default function Checkout() {
                 onClick={() => navigate('/billing')}
                 className="w-full h-14 bg-secondary-container text-on-secondary-fixed font-bold rounded-xl flex items-center justify-center mt-2 shadow-sm"
               >
-                Done / New Sale
+                {t('checkout.done_new_sale')}
               </button>
             </div>
           </div>

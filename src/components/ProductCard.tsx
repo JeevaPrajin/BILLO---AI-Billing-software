@@ -1,7 +1,8 @@
 import React from 'react';
-import { Product, CartItem } from '../store/types';
+import { Product } from '../store/types';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../store/AppContext';
+import { useT } from '../i18n/useT';
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +10,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { cart, addToCart, removeFromCart } = useAppContext();
+  const { t } = useT();
   
   const cartItem = cart.find(i => i.product.id === product.id);
   const inCartCount = cartItem?.quantity || 0;
@@ -41,7 +43,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {isSelected && (
         <div className="absolute -top-2 -right-2 bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5 font-bold">
           <span className="material-symbols-outlined text-xs">check</span>
-          <span>{inCartCount} in cart</span>
+          <span>{t('product.in_cart', { count: inCartCount })}</span>
         </div>
       )}
 
@@ -52,18 +54,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         
         {isLowStock ? (
           <span className="bg-error-container/40 text-error font-label-sm text-label-sm px-2 py-1 rounded-md font-bold flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs">warning</span> {product.stock} left
+            <span className="material-symbols-outlined text-xs">warning</span> {t('product.left', { count: product.stock })}
           </span>
         ) : (
           <span className="bg-surface-container-low text-on-tertiary-container font-label-sm text-label-sm px-2 py-1 rounded-md font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span> {product.stock} left
+            <span className="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span> {t('product.left', { count: product.stock })}
           </span>
         )}
       </div>
 
       <div className="mt-space-sm">
-        <h2 className="font-headline-sm text-headline-sm text-primary leading-tight line-clamp-1">{product.name}</h2>
-        <p className="font-body-sm text-body-sm text-on-surface-variant">{product.category}</p>
+        <h2 className="font-headline-sm text-headline-sm text-primary leading-tight line-clamp-1">{t(product.name)}</h2>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">{t(product.category)}</p>
       </div>
 
       <div className="mt-space-sm pt-space-2xs flex items-center justify-between border-t border-outline-variant/40">
